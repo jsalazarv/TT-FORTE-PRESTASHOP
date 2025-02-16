@@ -1,7 +1,68 @@
-mysql_data/
-prestashop_data/
+# Ignorar todo por defecto
+*
+
+# No ignorar .gitignore y archivos de configuración importantes
+!.gitignore
+!composer.json
+!README.md
+
+# Directorios principales de desarrollo
+!modules/
+!themes/
+!override/
+!config/
+!app/
+!templates/
+!src/
+
+# Ignorar todo dentro de estos directorios inicialmente
+modules/*
+themes/*
+override/*
+config/*
+app/*
+templates/*
+src/*
+
+# Permitir módulos personalizados
+!modules/*/
+
+# Permitir temas personalizados
+!themes/*/
+
+# Permitir overrides personalizados
+!override/*/
+
+# Permitir recursos de la aplicación
+!app/Resources/
+
+# Permitir templates personalizados
+!templates/*/
+
+# Permitir código fuente personalizado
+!src/*/
+
+# Permitir archivos de configuración específicos
+!config/theme.yml
+!config/modules.yml
+
+# Ignorar siempre estos directorios y archivos
 .DS_Store
 .env
-
-# windsurf rules
 .windsurfrules
+cache/*
+download/*
+img/*
+log/*
+upload/*
+vendor/*
+var/*
+admin*/
+tools/
+translations/
+docs/
+js/
+localization/
+mails/
+pdf/
+webservice/
