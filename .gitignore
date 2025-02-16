@@ -1,0 +1,7 @@
+mysql_data/
+prestashop_data/
+.DS_Store
+.env
+
+# windsurf rules
+.windsurfrules

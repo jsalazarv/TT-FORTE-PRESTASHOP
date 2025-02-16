@@ -1,0 +1,46 @@
+version: '3'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: prestashop_db
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-prestashop}
+      MYSQL_USER: ${MYSQL_USER:-prestashop}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-prestashop}
+    ports:
+      - "${MYSQL_PORT:-3306}:3306"
+    volumes:
+      - ./mysql_data:/var/lib/mysql
+    networks:
+      - prestashop_network
+
+  prestashop:
+    image: prestashop/prestashop:8.1
+    container_name: prestashop_app
+    environment:
+      DB_SERVER: mysql
+      DB_NAME: ${MYSQL_DATABASE:-prestashop}
+      DB_USER: ${MYSQL_USER:-prestashop}
+      DB_PASSWD: ${MYSQL_PASSWORD:-prestashop}
+      PS_INSTALL_AUTO: 1
+      PS_DOMAIN: ${PS_DOMAIN:-localhost:8080}
+      PS_FOLDER_ADMIN: ${PS_FOLDER_ADMIN:-admin4577}
+      PS_FOLDER_INSTALL: ${PS_FOLDER_INSTALL:-install4577}
+      PS_DEV_MODE: ${PS_DEV_MODE:-1}
+      PS_DEMO_MODE: ${PS_DEMO_MODE:-0}
+      ADMIN_MAIL: ${ADMIN_MAIL:-demo@prestashop.com}
+      ADMIN_PASSWD: ${ADMIN_PASSWD:-prestashop_demo}
+    ports:
+      - "${PRESTASHOP_PORT:-8080}:80"
+    volumes:
+      - ./prestashop_data:/var/www/html
+    depends_on:
+      - mysql
+    networks:
+      - prestashop_network
+
+networks:
+  prestashop_network:
+    driver: bridge
