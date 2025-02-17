@@ -7,61 +7,66 @@
 *}
 
 <div class="cart-detailed-totals">
-    <div class="card-block cart-summary-line custom-user-discount">
-        <div class="alert alert-info discount-alert">
-            {if $custom_discount.discount_type === 'percentage'}
-                <i class="material-icons">local_offer</i>
-                <span>{l s='Your personal discount (%s%%)' sprintf=[$custom_discount.discount_value|floatval] d='Modules.Customuserdiscounts.Shop'}</span>
-            {else}
-                <i class="material-icons">local_offer</i>
-                <span>{l s='Your personal discount' d='Modules.Customuserdiscounts.Shop'}</span>
-            {/if}
+    {if isset($custom_discount) && $custom_discount}
+        <div class="cart-summary-line cart-total">
+            <div class="alert alert-success text-center mb-2">
+                {if $custom_discount.discount_type === 'percentage'}
+                    ¡Se aplicó tu descuento personal del {$custom_discount.discount_value|floatval}%!
+                {else}
+                    ¡Se aplicó tu descuento personal de {$custom_discount.discount_value|string_format:"%.2f"}{$currency->sign}!
+                {/if}
+            </div>
+
+            <div class="cart-summary-line">
+                <span class="label">Precio regular:</span>
+                <span class="value">{$original_price|string_format:"%.2f"}{$currency->sign}</span>
+            </div>
+            <div class="cart-summary-line text-success">
+                <span class="label">Tu descuento:</span>
+                <span class="value">-{$discount_amount|string_format:"%.2f"}{$currency->sign}</span>
+            </div>
+            <div class="cart-summary-line font-weight-bold">
+                <span class="label">Tu precio final:</span>
+                <span class="value text-success">{$final_price|string_format:"%.2f"}{$currency->sign}</span>
+            </div>
         </div>
 
-        <div class="cart-summary-line">
-            <span class="label">{l s='Subtotal:' d='Modules.Customuserdiscounts.Shop'}</span>
-            <span class="value">{$total_before_discount|string_format:"%.2f"}{$currency->sign}</span>
-        </div>
+        <style>
+        .cart-summary-line.cart-total {
+            margin: 1rem 0;
+            padding: 1rem;
+            background: #f8f9fa;
+            border: 1px solid #e7e7e7;
+            border-radius: 4px;
+        }
 
-        <div class="cart-summary-line discount-line">
-            <span class="label">{l s='Your discount:' d='Modules.Customuserdiscounts.Shop'}</span>
-            <span class="value">-{$discount_amount|string_format:"%.2f"}{$currency->sign}</span>
-        </div>
-    </div>
+        .cart-summary-line .alert {
+            padding: 0.5rem;
+            margin-bottom: 1rem;
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+            font-weight: 600;
+        }
+
+        .cart-summary-line.text-success {
+            color: #28a745;
+        }
+
+        .cart-summary-line.text-success .value {
+            color: #28a745;
+            font-weight: 500;
+        }
+
+        .cart-summary-line.font-weight-bold {
+            border-top: 1px solid #e7e7e7;
+            padding-top: 0.75rem;
+            margin-top: 0.25rem;
+        }
+
+        .cart-summary-line.font-weight-bold .value {
+            color: #28a745;
+        }
+        </style>
+    {/if}
 </div>
-
-<style>
-.cart-summary-line.custom-user-discount {
-    background-color: #f8f9fa;
-    padding: 1rem;
-    border-radius: 4px;
-    margin: 1rem 0;
-}
-
-.custom-user-discount .discount-alert {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin-bottom: 1rem;
-    padding: 0.5rem 1rem;
-}
-
-.custom-user-discount .discount-alert i {
-    font-size: 1.2rem;
-}
-
-.custom-user-discount .cart-summary-line {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin: 0.5rem 0;
-}
-
-.custom-user-discount .discount-line {
-    color: #28a745;
-    font-weight: 600;
-    border-top: 1px solid #dee2e6;
-    padding-top: 0.5rem;
-    margin-top: 0.5rem;
-}
-</style>

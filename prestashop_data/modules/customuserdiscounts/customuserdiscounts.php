@@ -60,8 +60,10 @@ class CustomUserDiscounts extends Module
             'displayAdminCustomersForm',
             'displayAdminCustomersView',
             'displayProductPriceBlock',
+            'displayShoppingCartFooter',
             'displayCartPriceBlock',
-            'actionCartCalculate'
+            'actionCartCalculate',
+            'actionCartUpdateQuantityBefore'
         ];
 
         foreach ($hooks as $hook) {
@@ -346,42 +348,25 @@ class CustomUserDiscounts extends Module
 
     public function hookDisplayProductPriceBlock($params)
     {
-        // Solo mostrar en el bloque después del botón de añadir al carrito
         if ($params['type'] !== 'after_price') {
             return '';
         }
 
-        PrestaShopLogger::addLog('CustomUserDiscounts::hookDisplayProductPriceBlock - Inicio', 1);
-
         if (!$this->context->customer->isLogged()) {
-            PrestaShopLogger::addLog('CustomUserDiscounts - Usuario no logueado', 1);
             return '';
         }
 
         $customerId = (int) $this->context->customer->id;
-        PrestaShopLogger::addLog('CustomUserDiscounts - Usuario ID: ' . $customerId, 1);
-
         $repository = new CustomUserDiscountRepository();
         $activeDiscount = $repository->findActiveDiscountByCustomerId($customerId);
 
         if (!$activeDiscount) {
-            PrestaShopLogger::addLog('CustomUserDiscounts - No hay descuento activo', 1);
             return '';
         }
 
-        PrestaShopLogger::addLog('CustomUserDiscounts - Descuento encontrado: ' . json_encode($activeDiscount), 1);
-
         try {
-            if (!isset($params['product']) || !is_object($params['product'])) {
-                PrestaShopLogger::addLog('CustomUserDiscounts - No se encontró el producto en los parámetros', 1);
-                return '';
-            }
-
-            $productPresenter = $params['product'];
-            
-            // Obtener el precio base del producto
-            $originalPrice = (float) $productPresenter->price_amount;
-            PrestaShopLogger::addLog('CustomUserDiscounts - Precio original: ' . $originalPrice, 1);
+            $product = $params['product'];
+            $originalPrice = (float) $product->price_amount;
             
             $discountAmount = 0;
             if ($activeDiscount['discount_type'] === 'percentage') {
@@ -392,15 +377,13 @@ class CustomUserDiscounts extends Module
 
             $finalPrice = max($originalPrice - $discountAmount, 0);
 
-            PrestaShopLogger::addLog('CustomUserDiscounts - Monto descuento: ' . $discountAmount, 1);
-            PrestaShopLogger::addLog('CustomUserDiscounts - Precio final: ' . $finalPrice, 1);
-
             $this->context->smarty->assign([
                 'custom_discount' => $activeDiscount,
                 'original_price' => $originalPrice,
                 'discount_amount' => $discountAmount,
                 'final_price' => $finalPrice,
-                'currency' => $this->context->currency
+                'currency' => $this->context->currency,
+                'show_initial_price' => true
             ]);
 
             return $this->display(__FILE__, 'views/templates/hook/product_price_block.tpl');
@@ -410,37 +393,132 @@ class CustomUserDiscounts extends Module
         }
     }
 
+    public function hookDisplayShoppingCartFooter($params)
+    {
+        if (!$this->context->customer->isLogged()) {
+            return '';
+        }
+
+        $customerId = (int) $this->context->customer->id;
+        $repository = new CustomUserDiscountRepository();
+        $activeDiscount = $repository->findActiveDiscountByCustomerId($customerId);
+
+        if (!$activeDiscount) {
+            return '';
+        }
+
+        try {
+            if (!isset($params['cart'])) {
+                return '';
+            }
+
+            $cart = $params['cart'];
+            $products = $cart->getProducts();
+            
+            if (empty($products)) {
+                return '';
+            }
+
+            // Calcular el total original usando el precio de cada producto
+            $originalPrice = 0;
+            foreach ($products as $product) {
+                $price = Product::getPriceStatic(
+                    (int)$product['id_product'],
+                    true,
+                    (int)$product['id_product_attribute'],
+                    6,
+                    null,
+                    false,
+                    true,
+                    $product['cart_quantity']
+                );
+                $originalPrice += $price * (int)$product['cart_quantity'];
+            }
+
+            $discountAmount = 0;
+            if ($activeDiscount['discount_type'] === 'percentage') {
+                $discountAmount = $originalPrice * ($activeDiscount['discount_value'] / 100);
+            } else {
+                $discountAmount = min($activeDiscount['discount_value'], $originalPrice);
+            }
+
+            $finalPrice = max($originalPrice - $discountAmount, 0);
+
+            $this->context->smarty->assign([
+                'custom_discount' => $activeDiscount,
+                'original_price' => $originalPrice,
+                'discount_amount' => $discountAmount,
+                'final_price' => $finalPrice,
+                'currency' => $this->context->currency
+            ]);
+
+            return $this->display(__FILE__, 'views/templates/hook/shopping_cart.tpl');
+        } catch (Exception $e) {
+            PrestaShopLogger::addLog('CustomUserDiscounts - Error: ' . $e->getMessage(), 3);
+            return '';
+        }
+    }
+
     public function hookDisplayCartPriceBlock($params)
     {
         if (!$this->context->customer->isLogged() || $params['type'] !== 'cart_summary') {
-            return;
+            return '';
         }
 
+        $customerId = (int) $this->context->customer->id;
         $repository = new CustomUserDiscountRepository();
-        $activeDiscount = $repository->findActiveDiscountByCustomerId($this->context->customer->id);
+        $activeDiscount = $repository->findActiveDiscountByCustomerId($customerId);
 
         if (!$activeDiscount) {
-            return;
+            return '';
         }
 
-        $cart = $this->context->cart;
-        $totalBeforeDiscount = $cart->getOrderTotal(true, Cart::BOTH_WITHOUT_SHIPPING);
-        $discountAmount = 0;
+        try {
+            $cart = $this->context->cart;
+            $products = $cart->getProducts();
+            
+            if (empty($products)) {
+                return '';
+            }
 
-        if ($activeDiscount['discount_type'] === 'percentage') {
-            $discountAmount = $totalBeforeDiscount * ($activeDiscount['discount_value'] / 100);
-        } else {
-            $discountAmount = $activeDiscount['discount_value'];
+            // Calcular el total original usando el precio de cada producto
+            $originalPrice = 0;
+            foreach ($products as $product) {
+                $price = Product::getPriceStatic(
+                    (int)$product['id_product'],
+                    true,
+                    (int)$product['id_product_attribute'],
+                    6,
+                    null,
+                    false,
+                    true,
+                    $product['cart_quantity']
+                );
+                $originalPrice += $price * (int)$product['cart_quantity'];
+            }
+
+            $discountAmount = 0;
+            if ($activeDiscount['discount_type'] === 'percentage') {
+                $discountAmount = $originalPrice * ($activeDiscount['discount_value'] / 100);
+            } else {
+                $discountAmount = min($activeDiscount['discount_value'], $originalPrice);
+            }
+
+            $finalPrice = max($originalPrice - $discountAmount, 0);
+
+            $this->context->smarty->assign([
+                'custom_discount' => $activeDiscount,
+                'original_price' => $originalPrice,
+                'discount_amount' => $discountAmount,
+                'final_price' => $finalPrice,
+                'currency' => $this->context->currency
+            ]);
+
+            return $this->display(__FILE__, 'views/templates/hook/shopping_cart.tpl');
+        } catch (Exception $e) {
+            PrestaShopLogger::addLog('CustomUserDiscounts - Error: ' . $e->getMessage(), 3);
+            return '';
         }
-
-        $this->context->smarty->assign([
-            'custom_discount' => $activeDiscount,
-            'total_before_discount' => $totalBeforeDiscount,
-            'discount_amount' => $discountAmount,
-            'currency' => $this->context->currency
-        ]);
-
-        return $this->display(__FILE__, 'views/templates/hook/shopping_cart.tpl');
     }
 
     public function hookActionCartCalculate($params)
@@ -457,13 +535,33 @@ class CustomUserDiscounts extends Module
         }
 
         $cart = $params['cart'];
-        $totalBeforeDiscount = $cart->getOrderTotal(true, Cart::BOTH_WITHOUT_SHIPPING);
-        $discountAmount = 0;
+        $products = $cart->getProducts();
+        
+        if (empty($products)) {
+            return;
+        }
 
+        // Calcular el total original usando el precio de cada producto
+        $originalPrice = 0;
+        foreach ($products as $product) {
+            $price = Product::getPriceStatic(
+                (int)$product['id_product'],
+                true,
+                (int)$product['id_product_attribute'],
+                6,
+                null,
+                false,
+                true,
+                $product['cart_quantity']
+            );
+            $originalPrice += $price * (int)$product['cart_quantity'];
+        }
+
+        $discountAmount = 0;
         if ($activeDiscount['discount_type'] === 'percentage') {
-            $discountAmount = $totalBeforeDiscount * ($activeDiscount['discount_value'] / 100);
+            $discountAmount = $originalPrice * ($activeDiscount['discount_value'] / 100);
         } else {
-            $discountAmount = $activeDiscount['discount_value'];
+            $discountAmount = min($activeDiscount['discount_value'], $originalPrice);
         }
 
         // Aplicar el descuento al total del carrito
@@ -494,6 +592,62 @@ class CustomUserDiscounts extends Module
 
             // Aplicar la regla al carrito
             $cart->addCartRule($cartRule->id);
+        }
+    }
+
+    public function hookActionCartUpdateQuantityBefore($params)
+    {
+        // Removemos este hook ya que no debemos alterar los precios específicos
+        return;
+    }
+
+    public function hookDisplayModalContent($params)
+    {
+        if (!$this->context->customer->isLogged()) {
+            return '';
+        }
+
+        $customerId = (int) $this->context->customer->id;
+        $repository = new CustomUserDiscountRepository();
+        $activeDiscount = $repository->findActiveDiscountByCustomerId($customerId);
+
+        if (!$activeDiscount) {
+            return '';
+        }
+
+        try {
+            // Obtener el producto del modal
+            if (!isset($params['modal_content']) || !isset($params['modal_content']['product'])) {
+                return '';
+            }
+
+            $productPresenter = $params['modal_content']['product'];
+            
+            // Obtener el precio base del producto
+            $productObj = new Product((int)$productPresenter->id);
+            $originalPrice = (float)$productObj->base_price;
+            
+            $discountAmount = 0;
+            if ($activeDiscount['discount_type'] === 'percentage') {
+                $discountAmount = $originalPrice * ($activeDiscount['discount_value'] / 100);
+            } else {
+                $discountAmount = min($activeDiscount['discount_value'], $originalPrice);
+            }
+
+            $finalPrice = max($originalPrice - $discountAmount, 0);
+
+            $this->context->smarty->assign([
+                'custom_discount' => $activeDiscount,
+                'original_price' => $originalPrice,
+                'discount_amount' => $discountAmount,
+                'final_price' => $finalPrice,
+                'currency' => $this->context->currency
+            ]);
+
+            return $this->display(__FILE__, 'views/templates/hook/modal_cart_content.tpl');
+        } catch (Exception $e) {
+            PrestaShopLogger::addLog('CustomUserDiscounts - Error: ' . $e->getMessage(), 3);
+            return '';
         }
     }
 
