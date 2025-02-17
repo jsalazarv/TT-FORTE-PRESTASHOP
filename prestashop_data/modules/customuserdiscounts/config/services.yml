@@ -1,0 +1,33 @@
+services:
+  _defaults:
+    public: true
+    autowire: true
+    autoconfigure: true
+
+  # Repositorio de descuentos
+  prestashop.module.customuserdiscounts.repository.discount_repository:
+    class: PrestaShop\Module\CustomUserDiscounts\Repository\CustomUserDiscountRepository
+    arguments:
+      - '@doctrine.dbal.default_connection'
+      - '%database_prefix%'
+
+  # Controlador de descuentos
+  PrestaShop\Module\CustomUserDiscounts\Controller\Admin\DiscountController:
+    class: PrestaShop\Module\CustomUserDiscounts\Controller\Admin\DiscountController
+    public: true
+    arguments:
+      $discountRepository: '@prestashop.module.customuserdiscounts.repository.discount_repository'
+      $translator: '@translator'
+    tags: ['controller.service_arguments']
+
+  # Alias para el controlador
+  prestashop.module.customuserdiscounts.controller.discount_controller:
+    alias: PrestaShop\Module\CustomUserDiscounts\Controller\Admin\DiscountController
+    public: true
+
+  # Módulo principal
+  prestashop.module.customuserdiscounts.module:
+    class: CustomUserDiscounts
+    factory: ['Module', 'getInstanceByName']
+    arguments:
+      - 'customuserdiscounts'

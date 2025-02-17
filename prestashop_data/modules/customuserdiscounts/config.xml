@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<module>
+    <name>customuserdiscounts</name>
+    <displayName><![CDATA[Custom User Discounts]]></displayName>
+    <version><![CDATA[1.0.0]]></version>
+    <description><![CDATA[Module for managing custom discounts per user]]></description>
+    <author><![CDATA[Juan Salazar]]></author>
+    <tab><![CDATA[pricing_promotion]]></tab>
+    <is_configurable>1</is_configurable>
+    <need_instance>0</need_instance>
+</module>
