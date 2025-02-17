@@ -73,20 +73,25 @@
                                 </td>
                                 <td class="text-right">
                                     <div class="btn-group">
-                                        <button type="button" 
-                                                class="btn btn-link js-edit-discount" 
-                                                data-toggle="modal" 
-                                                data-target="#edit-discount-modal"
-                                                data-discount-id="{$discount.id_custom_user_discount|intval}"
-                                                data-discount-type="{$discount.discount_type|escape:'html':'UTF-8'}"
-                                                data-discount-value="{$discount.discount_value|floatval}">
-                                            <i class="material-icons">edit</i>
+                                        <button class="btn btn-link dropdown-toggle" data-toggle="dropdown">
+                                            <i class="material-icons">more_vert</i>
                                         </button>
-                                        <button type="button" 
-                                                class="btn btn-link text-danger js-delete-discount" 
-                                                data-discount-id="{$discount.id_custom_user_discount|intval}">
-                                            <i class="material-icons">delete</i>
-                                        </button>
+                                        <div class="dropdown-menu dropdown-menu-right">
+                                            <button class="dropdown-item js-edit-discount" 
+                                                    data-toggle="modal" 
+                                                    data-target="#edit-discount-modal"
+                                                    data-discount-id="{$discount.id_custom_user_discount|intval}"
+                                                    data-discount-type="{$discount.discount_type}"
+                                                    data-discount-value="{$discount.discount_value|string_format:"%.2f"}">
+                                                <i class="material-icons">edit</i>
+                                                {l s='Edit' d='Admin.Actions'}
+                                            </button>
+                                            <button class="dropdown-item js-delete-discount" 
+                                                    data-discount-id="{$discount.id_custom_user_discount|intval}">
+                                                <i class="material-icons">delete</i>
+                                                {l s='Delete' d='Admin.Actions'}
+                                            </button>
+                                        </div>
                                     </div>
                                 </td>
                             </tr>

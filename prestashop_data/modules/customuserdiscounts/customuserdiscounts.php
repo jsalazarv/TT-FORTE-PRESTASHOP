@@ -130,6 +130,13 @@ class CustomUserDiscounts extends Module
         $formBuilder = $params['form_builder'];
         $customerId = (int) $params['id'];
 
+        // Obtener el descuento activo
+        $repository = new CustomUserDiscountRepository();
+        $activeDiscount = $repository->findActiveDiscountByCustomerId($customerId);
+
+        // Obtener todos los descuentos para la vista
+        $discounts = $repository->findByCustomerId($customerId);
+
         // Agregar campos para el nuevo descuento
         $formBuilder->add('discount_type', ChoiceType::class, [
             'label' => $this->l('Discount Type'),
@@ -140,7 +147,8 @@ class CustomUserDiscounts extends Module
             ],
             'attr' => [
                 'class' => 'form-control'
-            ]
+            ],
+            'data' => $activeDiscount ? $activeDiscount['discount_type'] : null
         ]);
 
         $formBuilder->add('discount_value', NumberType::class, [
@@ -150,12 +158,9 @@ class CustomUserDiscounts extends Module
                 'class' => 'form-control',
                 'min' => 0,
                 'step' => 'any'
-            ]
+            ],
+            'data' => $activeDiscount ? $activeDiscount['discount_value'] : null
         ]);
-
-        // Obtener descuentos existentes
-        $repository = new CustomUserDiscountRepository();
-        $discounts = $repository->findByCustomerId($customerId);
 
         // Asignar variables para la plantilla
         $this->context->smarty->assign([

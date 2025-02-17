@@ -51,6 +51,20 @@ class CustomUserDiscountRepository
         return $result ?: [];
     }
 
+    public function findActiveDiscountByCustomerId($customerId)
+    {
+        $query = new DbQuery();
+        $query->select('*')
+            ->from('custom_user_discount')
+            ->where('id_customer = ' . (int)$customerId)
+            ->where('active = 1')
+            ->orderBy('date_add DESC');
+
+        $result = Db::getInstance()->executeS($query);
+        
+        return $result && count($result) > 0 ? $result[0] : null;
+    }
+
     public function delete($id)
     {
         return Db::getInstance()->update(
@@ -71,15 +85,28 @@ class CustomUserDiscountRepository
 
     public function saveCustomerDiscount($customerId, $discountType, $discountValue)
     {
+        // Buscar si existe un descuento activo
+        $existingDiscount = $this->findActiveDiscountByCustomerId($customerId);
+
         $data = [
-            'id_customer' => (int)$customerId,
             'discount_type' => pSQL($discountType),
             'discount_value' => (float)$discountValue,
-            'active' => 1,
-            'date_add' => date('Y-m-d H:i:s'),
             'date_upd' => date('Y-m-d H:i:s')
         ];
 
-        return Db::getInstance()->insert('custom_user_discount', $data);
+        if ($existingDiscount) {
+            // Actualizar el descuento existente
+            return Db::getInstance()->update(
+                'custom_user_discount',
+                $data,
+                'id_custom_user_discount = ' . (int)$existingDiscount['id_custom_user_discount']
+            );
+        } else {
+            // Crear un nuevo descuento
+            $data['id_customer'] = (int)$customerId;
+            $data['active'] = 1;
+            $data['date_add'] = $data['date_upd'];
+            return Db::getInstance()->insert('custom_user_discount', $data);
+        }
     }
 }
