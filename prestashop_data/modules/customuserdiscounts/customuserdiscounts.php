@@ -44,15 +44,48 @@ class CustomUserDiscounts extends Module
 
     public function install()
     {
-        return parent::install() &&
-            $this->registerHook('actionAuthentication') &&
-            $this->registerHook('actionCustomerFormBuilderModifier') &&
-            $this->registerHook('renderCustomerOptionsForm') &&
-            $this->registerHook('actionAfterUpdateCustomerFormHandler') &&
-            $this->registerHook('displayAdminCustomersForm') &&
-            $this->registerHook('displayAdminCustomersView') &&
-            $this->installTab() &&
-            $this->createCustomUserDiscountsTable();
+        PrestaShopLogger::addLog('CustomUserDiscounts: Iniciando instalación del módulo');
+        
+        if (!parent::install()) {
+            PrestaShopLogger::addLog('CustomUserDiscounts: Error en parent::install()');
+            return false;
+        }
+
+        // Registrar hooks
+        $hooks = [
+            'actionAuthentication',
+            'actionCustomerFormBuilderModifier',
+            'renderCustomerOptionsForm',
+            'actionAfterUpdateCustomerFormHandler',
+            'displayAdminCustomersForm',
+            'displayAdminCustomersView',
+            'displayProductPriceBlock',
+            'displayCartPriceBlock',
+            'actionCartCalculate'
+        ];
+
+        foreach ($hooks as $hook) {
+            if (!$this->registerHook($hook)) {
+                PrestaShopLogger::addLog('CustomUserDiscounts: Error al registrar hook ' . $hook);
+                return false;
+            }
+            PrestaShopLogger::addLog('CustomUserDiscounts: Hook registrado exitosamente: ' . $hook);
+        }
+
+        // Instalar pestaña
+        if (!$this->installTab()) {
+            PrestaShopLogger::addLog('CustomUserDiscounts: Error al instalar tab');
+            return false;
+        }
+
+        // Crear tabla
+        if (!$this->createCustomUserDiscountsTable()) {
+            PrestaShopLogger::addLog('CustomUserDiscounts: Error al crear tabla');
+            return false;
+        }
+
+        PrestaShopLogger::addLog('CustomUserDiscounts: Módulo instalado exitosamente');
+        return true;
     }
 
     public function uninstall()
@@ -309,6 +342,159 @@ class CustomUserDiscounts extends Module
         }
 
         die(json_encode($response));
+    }
+
+    public function hookDisplayProductPriceBlock($params)
+    {
+        // Solo mostrar en el bloque después del botón de añadir al carrito
+        if ($params['type'] !== 'after_price') {
+            return '';
+        }
+
+        PrestaShopLogger::addLog('CustomUserDiscounts::hookDisplayProductPriceBlock - Inicio', 1);
+
+        if (!$this->context->customer->isLogged()) {
+            PrestaShopLogger::addLog('CustomUserDiscounts - Usuario no logueado', 1);
+            return '';
+        }
+
+        $customerId = (int) $this->context->customer->id;
+        PrestaShopLogger::addLog('CustomUserDiscounts - Usuario ID: ' . $customerId, 1);
+
+        $repository = new CustomUserDiscountRepository();
+        $activeDiscount = $repository->findActiveDiscountByCustomerId($customerId);
+
+        if (!$activeDiscount) {
+            PrestaShopLogger::addLog('CustomUserDiscounts - No hay descuento activo', 1);
+            return '';
+        }
+
+        PrestaShopLogger::addLog('CustomUserDiscounts - Descuento encontrado: ' . json_encode($activeDiscount), 1);
+
+        try {
+            if (!isset($params['product']) || !is_object($params['product'])) {
+                PrestaShopLogger::addLog('CustomUserDiscounts - No se encontró el producto en los parámetros', 1);
+                return '';
+            }
+
+            $productPresenter = $params['product'];
+            
+            // Obtener el precio base del producto
+            $originalPrice = (float) $productPresenter->price_amount;
+            PrestaShopLogger::addLog('CustomUserDiscounts - Precio original: ' . $originalPrice, 1);
+            
+            $discountAmount = 0;
+            if ($activeDiscount['discount_type'] === 'percentage') {
+                $discountAmount = $originalPrice * ($activeDiscount['discount_value'] / 100);
+            } else {
+                $discountAmount = min($activeDiscount['discount_value'], $originalPrice);
+            }
+
+            $finalPrice = max($originalPrice - $discountAmount, 0);
+
+            PrestaShopLogger::addLog('CustomUserDiscounts - Monto descuento: ' . $discountAmount, 1);
+            PrestaShopLogger::addLog('CustomUserDiscounts - Precio final: ' . $finalPrice, 1);
+
+            $this->context->smarty->assign([
+                'custom_discount' => $activeDiscount,
+                'original_price' => $originalPrice,
+                'discount_amount' => $discountAmount,
+                'final_price' => $finalPrice,
+                'currency' => $this->context->currency
+            ]);
+
+            return $this->display(__FILE__, 'views/templates/hook/product_price_block.tpl');
+        } catch (Exception $e) {
+            PrestaShopLogger::addLog('CustomUserDiscounts - Error: ' . $e->getMessage(), 3);
+            return '';
+        }
+    }
+
+    public function hookDisplayCartPriceBlock($params)
+    {
+        if (!$this->context->customer->isLogged() || $params['type'] !== 'cart_summary') {
+            return;
+        }
+
+        $repository = new CustomUserDiscountRepository();
+        $activeDiscount = $repository->findActiveDiscountByCustomerId($this->context->customer->id);
+
+        if (!$activeDiscount) {
+            return;
+        }
+
+        $cart = $this->context->cart;
+        $totalBeforeDiscount = $cart->getOrderTotal(true, Cart::BOTH_WITHOUT_SHIPPING);
+        $discountAmount = 0;
+
+        if ($activeDiscount['discount_type'] === 'percentage') {
+            $discountAmount = $totalBeforeDiscount * ($activeDiscount['discount_value'] / 100);
+        } else {
+            $discountAmount = $activeDiscount['discount_value'];
+        }
+
+        $this->context->smarty->assign([
+            'custom_discount' => $activeDiscount,
+            'total_before_discount' => $totalBeforeDiscount,
+            'discount_amount' => $discountAmount,
+            'currency' => $this->context->currency
+        ]);
+
+        return $this->display(__FILE__, 'views/templates/hook/shopping_cart.tpl');
+    }
+
+    public function hookActionCartCalculate($params)
+    {
+        if (!$this->context->customer->isLogged()) {
+            return;
+        }
+
+        $repository = new CustomUserDiscountRepository();
+        $activeDiscount = $repository->findActiveDiscountByCustomerId($this->context->customer->id);
+
+        if (!$activeDiscount) {
+            return;
+        }
+
+        $cart = $params['cart'];
+        $totalBeforeDiscount = $cart->getOrderTotal(true, Cart::BOTH_WITHOUT_SHIPPING);
+        $discountAmount = 0;
+
+        if ($activeDiscount['discount_type'] === 'percentage') {
+            $discountAmount = $totalBeforeDiscount * ($activeDiscount['discount_value'] / 100);
+        } else {
+            $discountAmount = $activeDiscount['discount_value'];
+        }
+
+        // Aplicar el descuento al total del carrito
+        if ($discountAmount > 0) {
+            // Crear o actualizar la regla de carrito
+            $cartRule = new CartRule();
+            $cartRule->name = [
+                Configuration::get('PS_LANG_DEFAULT') => $this->l('Custom User Discount')
+            ];
+            $cartRule->id_customer = $this->context->customer->id;
+            $cartRule->date_from = date('Y-m-d H:i:s');
+            $cartRule->date_to = date('Y-m-d H:i:s', strtotime('+1 day'));
+            $cartRule->quantity = 1;
+            $cartRule->quantity_per_user = 1;
+            $cartRule->priority = 1;
+            $cartRule->partial_use = 0;
+            $cartRule->code = '';
+            $cartRule->minimum_amount = 0;
+            $cartRule->free_shipping = 0;
+            $cartRule->reduction_amount = $discountAmount;
+            $cartRule->reduction_tax = 1;
+            $cartRule->active = 1;
+
+            // Guardar la regla
+            if (!$cartRule->add()) {
+                return;
+            }
+
+            // Aplicar la regla al carrito
+            $cart->addCartRule($cartRule->id);
+        }
     }
 
     private function createCustomUserDiscountsTable()
