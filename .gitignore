@@ -6,6 +6,16 @@
 !composer.json
 !README.md
 
+# Permitir prestashop_data y sus subdirectorios
+!prestashop_data/
+!prestashop_data/modules/
+!prestashop_data/modules/*/
+!prestashop_data/modules/*/*
+!prestashop_data/modules/*/*/*
+!prestashop_data/modules/*/*/*/*
+!prestashop_data/modules/*/*/*/*/*
+!prestashop_data/modules/*/*/*/*/*/*
+
 # Directorios principales de desarrollo
 !modules/
 !themes/
