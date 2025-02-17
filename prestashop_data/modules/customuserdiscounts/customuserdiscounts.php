@@ -60,10 +60,11 @@ class CustomUserDiscounts extends Module
             'displayAdminCustomersForm',
             'displayAdminCustomersView',
             'displayProductPriceBlock',
-            'displayShoppingCartFooter',
             'displayCartPriceBlock',
+            'displayShoppingCart',
             'actionCartCalculate',
-            'actionCartUpdateQuantityBefore'
+            'actionCartUpdateQuantityBefore',
+            'actionCartSave'
         ];
 
         foreach ($hooks as $hook) {
@@ -393,72 +394,6 @@ class CustomUserDiscounts extends Module
         }
     }
 
-    public function hookDisplayShoppingCartFooter($params)
-    {
-        if (!$this->context->customer->isLogged()) {
-            return '';
-        }
-
-        $customerId = (int) $this->context->customer->id;
-        $repository = new CustomUserDiscountRepository();
-        $activeDiscount = $repository->findActiveDiscountByCustomerId($customerId);
-
-        if (!$activeDiscount) {
-            return '';
-        }
-
-        try {
-            if (!isset($params['cart'])) {
-                return '';
-            }
-
-            $cart = $params['cart'];
-            $products = $cart->getProducts();
-            
-            if (empty($products)) {
-                return '';
-            }
-
-            // Calcular el total original usando el precio de cada producto
-            $originalPrice = 0;
-            foreach ($products as $product) {
-                $price = Product::getPriceStatic(
-                    (int)$product['id_product'],
-                    true,
-                    (int)$product['id_product_attribute'],
-                    6,
-                    null,
-                    false,
-                    true,
-                    $product['cart_quantity']
-                );
-                $originalPrice += $price * (int)$product['cart_quantity'];
-            }
-
-            $discountAmount = 0;
-            if ($activeDiscount['discount_type'] === 'percentage') {
-                $discountAmount = $originalPrice * ($activeDiscount['discount_value'] / 100);
-            } else {
-                $discountAmount = min($activeDiscount['discount_value'], $originalPrice);
-            }
-
-            $finalPrice = max($originalPrice - $discountAmount, 0);
-
-            $this->context->smarty->assign([
-                'custom_discount' => $activeDiscount,
-                'original_price' => $originalPrice,
-                'discount_amount' => $discountAmount,
-                'final_price' => $finalPrice,
-                'currency' => $this->context->currency
-            ]);
-
-            return $this->display(__FILE__, 'views/templates/hook/shopping_cart.tpl');
-        } catch (Exception $e) {
-            PrestaShopLogger::addLog('CustomUserDiscounts - Error: ' . $e->getMessage(), 3);
-            return '';
-        }
-    }
-
     public function hookDisplayCartPriceBlock($params)
     {
         if (!$this->context->customer->isLogged() || $params['type'] !== 'cart_summary') {
@@ -527,71 +462,78 @@ class CustomUserDiscounts extends Module
             return;
         }
 
+        $customerId = (int) $this->context->customer->id;
         $repository = new CustomUserDiscountRepository();
-        $activeDiscount = $repository->findActiveDiscountByCustomerId($this->context->customer->id);
+        $activeDiscount = $repository->findActiveDiscountByCustomerId($customerId);
 
         if (!$activeDiscount) {
             return;
         }
 
-        $cart = $params['cart'];
-        $products = $cart->getProducts();
-        
-        if (empty($products)) {
-            return;
-        }
+        try {
+            $cart = $params['cart'];
+            if (!Validate::isLoadedObject($cart)) {
+                return;
+            }
 
-        // Calcular el total original usando el precio de cada producto
-        $originalPrice = 0;
-        foreach ($products as $product) {
-            $price = Product::getPriceStatic(
-                (int)$product['id_product'],
-                true,
-                (int)$product['id_product_attribute'],
-                6,
-                null,
-                false,
-                true,
-                $product['cart_quantity']
-            );
-            $originalPrice += $price * (int)$product['cart_quantity'];
-        }
+            $products = $cart->getProducts();
+            if (empty($products)) {
+                return;
+            }
 
-        $discountAmount = 0;
-        if ($activeDiscount['discount_type'] === 'percentage') {
-            $discountAmount = $originalPrice * ($activeDiscount['discount_value'] / 100);
-        } else {
-            $discountAmount = min($activeDiscount['discount_value'], $originalPrice);
-        }
+            // Calcular el total original usando el precio de cada producto
+            $originalPrice = 0;
+            foreach ($products as $product) {
+                $price = Product::getPriceStatic(
+                    (int)$product['id_product'],
+                    true,
+                    (int)$product['id_product_attribute'],
+                    6,
+                    null,
+                    false,
+                    true,
+                    $product['cart_quantity']
+                );
+                $originalPrice += $price * (int)$product['cart_quantity'];
+            }
 
-        // Aplicar el descuento al total del carrito
-        if ($discountAmount > 0) {
-            // Crear o actualizar la regla de carrito
+            $discountAmount = 0;
+            if ($activeDiscount['discount_type'] === 'percentage') {
+                $discountAmount = $originalPrice * ($activeDiscount['discount_value'] / 100);
+            } else {
+                $discountAmount = min($activeDiscount['discount_value'], $originalPrice);
+            }
+
+            // Crear o actualizar la regla de carrito específica
             $cartRule = new CartRule();
-            $cartRule->name = [
-                Configuration::get('PS_LANG_DEFAULT') => $this->l('Custom User Discount')
-            ];
-            $cartRule->id_customer = $this->context->customer->id;
+            $cartRule->name = [Configuration::get('PS_LANG_DEFAULT') => 'Descuento Personal'];
+            $cartRule->id_customer = $customerId;
             $cartRule->date_from = date('Y-m-d H:i:s');
-            $cartRule->date_to = date('Y-m-d H:i:s', strtotime('+1 day'));
+            $cartRule->date_to = date('Y-m-d H:i:s', strtotime('+1 minute'));
             $cartRule->quantity = 1;
             $cartRule->quantity_per_user = 1;
             $cartRule->priority = 1;
             $cartRule->partial_use = 0;
-            $cartRule->code = '';
+            $cartRule->code = 'PERSONAL_' . $customerId;
             $cartRule->minimum_amount = 0;
-            $cartRule->free_shipping = 0;
             $cartRule->reduction_amount = $discountAmount;
-            $cartRule->reduction_tax = 1;
+            $cartRule->reduction_tax = true;
             $cartRule->active = 1;
 
-            // Guardar la regla
-            if (!$cartRule->add()) {
-                return;
+            // Limpiar reglas anteriores
+            $existingRules = $cart->getCartRules();
+            foreach ($existingRules as $rule) {
+                if (strpos($rule['code'], 'PERSONAL_') === 0) {
+                    $cart->removeCartRule($rule['id_cart_rule']);
+                }
             }
 
-            // Aplicar la regla al carrito
-            $cart->addCartRule($cartRule->id);
+            if ($cartRule->add()) {
+                $cart->addCartRule($cartRule->id);
+            }
+
+        } catch (Exception $e) {
+            PrestaShopLogger::addLog('CustomUserDiscounts - Error calculating cart: ' . $e->getMessage(), 3);
         }
     }
 
@@ -648,6 +590,149 @@ class CustomUserDiscounts extends Module
         } catch (Exception $e) {
             PrestaShopLogger::addLog('CustomUserDiscounts - Error: ' . $e->getMessage(), 3);
             return '';
+        }
+    }
+
+    public function hookDisplayShoppingCart($params)
+    {
+        if (!$this->context->customer->isLogged()) {
+            return '';
+        }
+
+        $customerId = (int) $this->context->customer->id;
+        $repository = new CustomUserDiscountRepository();
+        $activeDiscount = $repository->findActiveDiscountByCustomerId($customerId);
+
+        if (!$activeDiscount) {
+            return '';
+        }
+
+        try {
+            $cart = $this->context->cart;
+            $products = $cart->getProducts();
+            
+            if (empty($products)) {
+                return '';
+            }
+
+            // Calcular el total original usando el precio de cada producto
+            $originalPrice = 0;
+            foreach ($products as $product) {
+                $price = Product::getPriceStatic(
+                    (int)$product['id_product'],
+                    true,
+                    (int)$product['id_product_attribute'],
+                    6,
+                    null,
+                    false,
+                    true,
+                    $product['cart_quantity']
+                );
+                $originalPrice += $price * (int)$product['cart_quantity'];
+            }
+
+            $discountAmount = 0;
+            if ($activeDiscount['discount_type'] === 'percentage') {
+                $discountAmount = $originalPrice * ($activeDiscount['discount_value'] / 100);
+            } else {
+                $discountAmount = min($activeDiscount['discount_value'], $originalPrice);
+            }
+
+            $finalPrice = max($originalPrice - $discountAmount, 0);
+
+            $this->context->smarty->assign([
+                'custom_discount' => $activeDiscount,
+                'original_price' => $originalPrice,
+                'discount_amount' => $discountAmount,
+                'final_price' => $finalPrice,
+                'currency' => $this->context->currency
+            ]);
+
+            return $this->display(__FILE__, 'views/templates/hook/cart_summary_discount.tpl');
+        } catch (Exception $e) {
+            PrestaShopLogger::addLog('CustomUserDiscounts - Error: ' . $e->getMessage(), 3);
+            return '';
+        }
+    }
+
+    public function hookActionCartSave($params)
+    {
+        if (!$this->context->customer->isLogged()) {
+            return;
+        }
+
+        $customerId = (int) $this->context->customer->id;
+        $repository = new CustomUserDiscountRepository();
+        $activeDiscount = $repository->findActiveDiscountByCustomerId($customerId);
+
+        if (!$activeDiscount) {
+            return;
+        }
+
+        try {
+            $cart = $this->context->cart;
+            if (!Validate::isLoadedObject($cart)) {
+                return;
+            }
+
+            $products = $cart->getProducts();
+            if (empty($products)) {
+                return;
+            }
+
+            // Calcular el total original usando el precio de cada producto
+            $originalPrice = 0;
+            foreach ($products as $product) {
+                $price = Product::getPriceStatic(
+                    (int)$product['id_product'],
+                    true,
+                    (int)$product['id_product_attribute'],
+                    6,
+                    null,
+                    false,
+                    true,
+                    $product['cart_quantity']
+                );
+                $originalPrice += $price * (int)$product['cart_quantity'];
+            }
+
+            $discountAmount = 0;
+            if ($activeDiscount['discount_type'] === 'percentage') {
+                $discountAmount = $originalPrice * ($activeDiscount['discount_value'] / 100);
+            } else {
+                $discountAmount = min($activeDiscount['discount_value'], $originalPrice);
+            }
+
+            // Crear o actualizar la regla de carrito específica
+            $cartRule = new CartRule();
+            $cartRule->name = [Configuration::get('PS_LANG_DEFAULT') => 'Descuento Personal'];
+            $cartRule->id_customer = $customerId;
+            $cartRule->date_from = date('Y-m-d H:i:s');
+            $cartRule->date_to = date('Y-m-d H:i:s', strtotime('+1 minute'));
+            $cartRule->quantity = 1;
+            $cartRule->quantity_per_user = 1;
+            $cartRule->priority = 1;
+            $cartRule->partial_use = 0;
+            $cartRule->code = 'PERSONAL_' . $customerId;
+            $cartRule->minimum_amount = 0;
+            $cartRule->reduction_amount = $discountAmount;
+            $cartRule->reduction_tax = true;
+            $cartRule->active = 1;
+
+            // Limpiar reglas anteriores
+            $existingRules = $cart->getCartRules();
+            foreach ($existingRules as $rule) {
+                if (strpos($rule['code'], 'PERSONAL_') === 0) {
+                    $cart->removeCartRule($rule['id_cart_rule']);
+                }
+            }
+
+            if ($cartRule->add()) {
+                $cart->addCartRule($cartRule->id);
+            }
+
+        } catch (Exception $e) {
+            PrestaShopLogger::addLog('CustomUserDiscounts - Error updating cart: ' . $e->getMessage(), 3);
         }
     }
 
