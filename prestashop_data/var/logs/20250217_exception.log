@@ -1,0 +1,2 @@
+*ERROR* 	v8.1.7	2025/02/17 - 03:55:35: Link to database cannot be established: SQLSTATE[HY000] [2002] php_network_getaddresses: getaddrinfo for mysql failed: nodename nor servname provided, or not known at line 119 in file classes/db/DbPDO.php
+*ERROR* 	v8.1.7	2025/02/17 - 03:55:46: Link to database cannot be established: SQLSTATE[HY000] [2002] php_network_getaddresses: getaddrinfo for mysql failed: nodename nor servname provided, or not known at line 119 in file classes/db/DbPDO.php

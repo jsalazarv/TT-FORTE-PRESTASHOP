@@ -1,0 +1,15 @@
+admin_custom_user_discounts_list:
+  path: /custom-user-discounts
+  methods: [GET]
+  defaults:
+    _controller: 'PrestaShop\Module\CustomUserDiscounts\Controller\Admin\DiscountController::listAction'
+    _legacy_controller: 'AdminCustomUserDiscounts'
+    _legacy_link: 'AdminCustomUserDiscounts'
+
+admin_custom_user_discounts_delete:
+  path: /custom-user-discounts/delete
+  methods: [POST]
+  defaults:
+    _controller: 'PrestaShop\Module\CustomUserDiscounts\Controller\Admin\DiscountController::deleteAction'
+    _legacy_controller: 'AdminCustomUserDiscounts'
+    _legacy_link: 'AdminCustomUserDiscounts'

@@ -1,0 +1,17 @@
+services:
+  _defaults:
+    public: true
+    autowire: true
+    autoconfigure: true
+
+  prestashop.module.customuserdiscounts.repository.discount_repository:
+    class: PrestaShop\Module\CustomUserDiscounts\Repository\CustomUserDiscountRepository
+    public: true
+
+  PrestaShop\Module\CustomUserDiscounts\Controller\Admin\DiscountController:
+    class: PrestaShop\Module\CustomUserDiscounts\Controller\Admin\DiscountController
+    public: true
+    arguments:
+      - '@prestashop.module.customuserdiscounts.repository.discount_repository'
+      - '@prestashop.core.admin.data_provider.customer_provider'
+      - '@prestashop.adapter.legacy.context'
