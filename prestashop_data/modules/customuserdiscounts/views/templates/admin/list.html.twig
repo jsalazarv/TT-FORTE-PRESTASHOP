@@ -1,0 +1,82 @@
+{% extends '@PrestaShop/Admin/layout.html.twig' %}
+{% import '@PrestaShop/Admin/macros.html.twig' as ps %}
+
+{% block content %}
+    {% block customuserdiscounts_listing %}
+        <div class="row">
+            <div class="col">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-header-title">
+                            {{ 'Custom User Discounts'|trans({}, 'Admin.Global') }}
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        <table class="table">
+                            <thead>
+                                <tr class="column-headers">
+                                    <th scope="col">{{ 'ID'|trans({}, 'Admin.Global') }}</th>
+                                    <th scope="col">{{ 'Customer'|trans({}, 'Admin.Global') }}</th>
+                                    <th scope="col">{{ 'Email'|trans({}, 'Admin.Global') }}</th>
+                                    <th scope="col">{{ 'Type'|trans({}, 'Admin.Global') }}</th>
+                                    <th scope="col" class="text-right">{{ 'Value'|trans({}, 'Admin.Global') }}</th>
+                                    <th scope="col">{{ 'Date Added'|trans({}, 'Admin.Global') }}</th>
+                                    <th scope="col" class="text-right">{{ 'Actions'|trans({}, 'Admin.Global') }}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% if discounts is defined and discounts|length > 0 %}
+                                    {% for discount in discounts %}
+                                        <tr>
+                                            <td class="center">{{ discount.id }}</td>
+<td>{{ discount.customerName }}</td>
+<td>{{ discount.customerEmail }}</td>
+<td>{{ discount.discountType }}</td>
+<td class="text-right">
+    {% if discount.discountType == 'percentage' %}
+        {{ discount.discountValue|round }}%
+    {% else %}
+        {{ discount.discountValue|price_format }}
+    {% endif %}
+</td>
+<td>{{ discount.dateAdd|date('Y-m-d H:i:s') }}</td>
+<td class="text-right">
+    <div class="btn-group" role="group">
+        {% if is_granted('edit', discount.id) %}
+            <a href="{{ path('admin_customuserdiscounts_edit', {'id': discount.id}) }}" 
+               class="btn btn-default" 
+               title="{{ 'Edit'|trans({}, 'Admin.Actions') }}">
+                <i class="material-icons">edit</i>
+            </a>
+        {% endif %}
+        {% if is_granted('delete', discount.id) %}
+            <a href="{{ path('admin_customuserdiscounts_delete', {'id': discount.id}) }}" 
+               class="btn btn-default" 
+               title="{{ 'Delete'|trans({}, 'Admin.Actions') }}"
+               onclick="return confirm('{{ 'Are you sure?'|trans({}, 'Admin.Notifications.Warning') }}');">
+                <i class="material-icons">delete</i>
+            </a>
+        {% endif %}
+    </div>
+</td>
+                                        </tr>
+                                    {% endfor %}
+                                {% else %}
+                                    <tr>
+                                        <td colspan="7" class="text-center">
+                                            {{ 'No records found'|trans({}, 'Admin.Global') }}
+                                        </td>
+                                    </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endblock %}
+
+    {% block javascripts %}
+        {{ parent() }}
+    {% endblock %}
+{% endblock %}

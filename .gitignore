@@ -16,6 +16,13 @@
 !prestashop_data/modules/*/*/*/*/*
 !prestashop_data/modules/*/*/*/*/*/*
 
+# Permitir específicamente archivos del módulo customuserdiscounts
+!prestashop_data/modules/customuserdiscounts/**/*.php
+!prestashop_data/modules/customuserdiscounts/**/*.twig
+!prestashop_data/modules/customuserdiscounts/**/*.yml
+!prestashop_data/modules/customuserdiscounts/**/*.json
+!prestashop_data/modules/customuserdiscounts/**/*.xml
+
 # Directorios principales de desarrollo
 !modules/
 !themes/
