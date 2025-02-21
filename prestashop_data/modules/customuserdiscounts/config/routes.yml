@@ -1,10 +1,10 @@
 admin_customuserdiscounts_list:
-  path: customuserdiscounts/list
+  path: /customuserdiscounts
   methods: [GET]
   defaults:
-    _controller: PrestaShop\Module\CustomUserDiscounts\Controller\AdminCustomUserDiscountsController::listAction
-    _legacy_controller: AdminCustomUserDiscounts
-    _legacy_link: AdminCustomUserDiscounts
+    _controller: 'PrestaShop\Module\CustomUserDiscounts\Controller\AdminCustomUserDiscountsController::listAction'
+    _legacy_controller: 'AdminCustomUserDiscounts'
+    _legacy_link: 'AdminCustomUserDiscounts'
 
 admin_customuserdiscounts_create:
   path: customuserdiscounts/create
@@ -14,19 +14,17 @@ admin_customuserdiscounts_create:
     _legacy_controller: 'AdminCustomUserDiscounts'
 
 admin_customuserdiscounts_edit:
-  path: customuserdiscounts/edit/{id}
-  methods: [GET, POST]
+  path: /customuserdiscounts/edit/{id}
+  methods: [POST]
   defaults:
-    _controller: PrestaShop\Module\CustomUserDiscounts\Controller\AdminCustomUserDiscountsController::editAction
-    _legacy_controller: AdminCustomUserDiscounts
+    _controller: 'PrestaShop\Module\CustomUserDiscounts\Controller\AdminCustomUserDiscountsController::editAction'
   requirements:
     id: \d+
 
 admin_customuserdiscounts_delete:
-  path: customuserdiscounts/delete/{id}
-  methods: [POST, DELETE]
+  path: /customuserdiscounts/delete/{id}
+  methods: [POST]
   defaults:
-    _controller: PrestaShop\Module\CustomUserDiscounts\Controller\AdminCustomUserDiscountsController::deleteAction
-    _legacy_controller: AdminCustomUserDiscounts
+    _controller: 'PrestaShop\Module\CustomUserDiscounts\Controller\AdminCustomUserDiscountsController::deleteAction'
   requirements:
     id: \d+

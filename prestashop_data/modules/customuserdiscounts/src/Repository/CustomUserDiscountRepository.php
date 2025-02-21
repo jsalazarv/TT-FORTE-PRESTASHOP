@@ -22,7 +22,7 @@ class CustomUserDiscountRepository
         $qb = $this->connection->createQueryBuilder();
         $qb->select('d.*, CONCAT(c.firstname, " ", c.lastname) as customer_name, c.email as customer_email')
            ->from($this->table, 'd')
-           ->leftJoin('d', $this->dbPrefix . 'customer', 'c', 'd.id_customer = c.id_customer')
+           ->leftJoin('d', $this->dbPrefix . 'customer', 'c', 'c.id_customer = d.id_customer')
            ->orderBy('d.id_custom_user_discount', 'DESC');
 
         return $qb->execute()->fetchAll();
@@ -80,6 +80,46 @@ class CustomUserDiscountRepository
         }
     }
 
+    public function update(int $id, array $data): bool
+    {
+        try {
+            $this->connection->beginTransaction();
+
+            $this->connection->update(
+                $this->table,
+                [
+                    'discount_type' => (string) $data['discount_type'],
+                    'discount_value' => (float) $data['discount_value']
+                ],
+                ['id_custom_user_discount' => $id]
+            );
+
+            $this->connection->commit();
+            return true;
+        } catch (\Exception $e) {
+            $this->connection->rollBack();
+            return false;
+        }
+    }
+
+    public function delete(int $id): bool
+    {
+        try {
+            $this->connection->beginTransaction();
+
+            $this->connection->delete(
+                $this->table,
+                ['id_custom_user_discount' => $id]
+            );
+
+            $this->connection->commit();
+            return true;
+        } catch (\Exception $e) {
+            $this->connection->rollBack();
+            return false;
+        }
+    }
+
     private function insert(array $data): bool
     {
         $data['date_add'] = date('Y-m-d H:i:s');
@@ -88,7 +128,7 @@ class CustomUserDiscountRepository
         return (bool) $this->connection->insert($this->table, $data);
     }
 
-    private function update(array $data): bool
+    private function updateData(array $data): bool
     {
         $id = $data['id_custom_user_discount'];
         unset($data['id_custom_user_discount']);
@@ -99,14 +139,5 @@ class CustomUserDiscountRepository
             $data,
             ['id_custom_user_discount' => $id]
         );
-    }
-
-    public function delete(int $id): bool
-    {
-        try {
-            return (bool) $this->connection->delete($this->table, ['id_custom_user_discount' => $id]);
-        } catch (\Exception $e) {
-            return false;
-        }
     }
 }

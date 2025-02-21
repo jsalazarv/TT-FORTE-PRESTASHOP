@@ -1,3 +1,5 @@
+prestashop_data/var/cache/
+
 # Ignorar siempre estos directorios y archivos
 .DS_Store
 .env

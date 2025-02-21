@@ -482,7 +482,7 @@ return [
             [['_route' => 'admin_link_block_create', '_controller' => 'PrestaShop\\Module\\LinkList\\Controller\\Admin\\Improve\\Design\\LinkBlockController::createAction', '_legacy_controller' => 'AdminLinkWidget'], null, ['GET' => 0], null, false, false, null],
             [['_route' => 'admin_link_block_create_process', '_controller' => 'PrestaShop\\Module\\LinkList\\Controller\\Admin\\Improve\\Design\\LinkBlockController::createProcessAction', '_legacy_controller' => 'AdminLinkWidget'], null, ['POST' => 0], null, false, false, null],
         ],
-        '/modules/customuserdiscounts/list' => [[['_route' => 'admin_customuserdiscounts_list', '_controller' => 'PrestaShop\\Module\\CustomUserDiscounts\\Controller\\AdminCustomUserDiscountsController::listAction', '_legacy_controller' => 'AdminCustomUserDiscounts', '_legacy_link' => 'AdminCustomUserDiscounts'], null, ['GET' => 0], null, false, false, null]],
+        '/modules/customuserdiscounts' => [[['_route' => 'admin_customuserdiscounts_list', '_controller' => 'PrestaShop\\Module\\CustomUserDiscounts\\Controller\\AdminCustomUserDiscountsController::listAction', '_legacy_controller' => 'AdminCustomUserDiscounts', '_legacy_link' => 'AdminCustomUserDiscounts'], null, ['GET' => 0], null, false, false, null]],
         '/modules/customuserdiscounts/create' => [[['_route' => 'admin_customuserdiscounts_create', '_controller' => 'prestashop.module.customuserdiscounts.controller.discount:createAction', '_legacy_controller' => 'AdminCustomUserDiscounts'], null, ['GET' => 0, 'POST' => 1], null, false, false, null]],
     ],
     [ // $regexpList
@@ -1338,9 +1338,9 @@ return [
         ],
         10492 => [[['_route' => 'admin_link_block_delete', '_controller' => 'PrestaShop\\Module\\LinkList\\Controller\\Admin\\Improve\\Design\\LinkBlockController::deleteAction', '_legacy_controller' => 'AdminLinkWidget'], ['linkBlockId'], ['POST' => 0], null, false, true, null]],
         10525 => [[['_route' => 'admin_link_block_update_positions', '_controller' => 'PrestaShop\\Module\\LinkList\\Controller\\Admin\\Improve\\Design\\LinkBlockController::updatePositionsAction', '_legacy_controller' => 'AdminLinkWidget'], ['hookId'], ['POST' => 0], null, false, true, null]],
-        10569 => [[['_route' => 'admin_customuserdiscounts_edit', '_controller' => 'PrestaShop\\Module\\CustomUserDiscounts\\Controller\\AdminCustomUserDiscountsController::editAction', '_legacy_controller' => 'AdminCustomUserDiscounts'], ['id'], ['GET' => 0, 'POST' => 1], null, false, true, null]],
+        10569 => [[['_route' => 'admin_customuserdiscounts_edit', '_controller' => 'PrestaShop\\Module\\CustomUserDiscounts\\Controller\\AdminCustomUserDiscountsController::editAction'], ['id'], ['POST' => 0], null, false, true, null]],
         10591 => [
-            [['_route' => 'admin_customuserdiscounts_delete', '_controller' => 'PrestaShop\\Module\\CustomUserDiscounts\\Controller\\AdminCustomUserDiscountsController::deleteAction', '_legacy_controller' => 'AdminCustomUserDiscounts'], ['id'], ['POST' => 0, 'DELETE' => 1], null, false, true, null],
+            [['_route' => 'admin_customuserdiscounts_delete', '_controller' => 'PrestaShop\\Module\\CustomUserDiscounts\\Controller\\AdminCustomUserDiscountsController::deleteAction'], ['id'], ['POST' => 0], null, false, true, null],
             [null, null, null, null, false, false, 0],
         ],
     ],

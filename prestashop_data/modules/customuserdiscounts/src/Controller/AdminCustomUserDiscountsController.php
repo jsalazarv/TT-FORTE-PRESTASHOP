@@ -5,6 +5,7 @@ namespace PrestaShop\Module\CustomUserDiscounts\Controller;
 use PrestaShopBundle\Controller\Admin\FrameworkBundleAdminController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use PrestaShop\Module\CustomUserDiscounts\Repository\CustomUserDiscountRepository;
 
 class AdminCustomUserDiscountsController extends FrameworkBundleAdminController
@@ -17,14 +18,19 @@ class AdminCustomUserDiscountsController extends FrameworkBundleAdminController
 
         // Transformar los datos para la vista
         $formattedDiscounts = array_map(function ($discount) {
+            $discountType = $discount['discount_type'];
+            $discountValue = (float) $discount['discount_value'];
+
             return [
                 'id' => $discount['id_custom_user_discount'],
                 'customerName' => $discount['customer_name'],
                 'customerEmail' => $discount['customer_email'] ?? '',
-                'discountType' => $discount['discount_type'] === 'percentage' ? 
-                    $this->trans('Admin.Global', 'Percentage', []) : 
-                    $this->trans('Admin.Global', 'Fixed Amount', []),
-                'discountValue' => $discount['discount_value'],
+                'discountType' => $this->trans('Admin.Global', $discountType === 'percentage' ? 'Percentage' : 'Fixed Amount', []),
+                'rawType' => $discountType, // Para el modal de edición
+                'discountValue' => $discountValue,
+                'formattedValue' => $discountType === 'percentage' ? 
+                    number_format($discountValue, 2) . '%' : 
+                    $this->get('prestashop.adapter.data_provider.currency')->getDefaultCurrencyIsoCode() . ' ' . number_format($discountValue, 2),
                 'dateAdd' => $discount['date_add']
             ];
         }, $discounts);
@@ -37,15 +43,58 @@ class AdminCustomUserDiscountsController extends FrameworkBundleAdminController
         ]);
     }
 
-    public function editAction(Request $request, int $id): Response
+    public function editAction(Request $request, int $id): JsonResponse
     {
-        // TODO: Implementar edición
-        return new Response('Edit action not implemented yet');
+        if (!$request->isXmlHttpRequest()) {
+            return new JsonResponse(['error' => 'Invalid request'], 400);
+        }
+
+        try {
+            $data = json_decode($request->getContent(), true);
+            if (!isset($data['discountType']) || !isset($data['discountValue'])) {
+                throw new \Exception('Missing required fields');
+            }
+
+            /** @var CustomUserDiscountRepository $repository */
+            $repository = $this->get('prestashop.module.customuserdiscounts.repository.discount_repository');
+            
+            $result = $repository->update(
+                (int) $id,
+                [
+                    'discount_type' => $data['discountType'],
+                    'discount_value' => (float) $data['discountValue']
+                ]
+            );
+
+            if ($result) {
+                return new JsonResponse(['success' => true]);
+            }
+
+            return new JsonResponse(['error' => 'Failed to update discount'], 500);
+        } catch (\Exception $e) {
+            return new JsonResponse(['error' => $e->getMessage()], 500);
+        }
     }
 
-    public function deleteAction(Request $request, int $id): Response
+    public function deleteAction(Request $request, int $id): JsonResponse
     {
-        // TODO: Implementar eliminación
-        return new Response('Delete action not implemented yet');
+        if (!$request->isXmlHttpRequest()) {
+            return new JsonResponse(['error' => 'Invalid request'], 400);
+        }
+
+        try {
+            /** @var CustomUserDiscountRepository $repository */
+            $repository = $this->get('prestashop.module.customuserdiscounts.repository.discount_repository');
+            
+            $result = $repository->delete((int) $id);
+
+            if ($result) {
+                return new JsonResponse(['success' => true]);
+            }
+
+            return new JsonResponse(['error' => 'Failed to delete discount'], 500);
+        } catch (\Exception $e) {
+            return new JsonResponse(['error' => $e->getMessage()], 500);
+        }
     }
 }
