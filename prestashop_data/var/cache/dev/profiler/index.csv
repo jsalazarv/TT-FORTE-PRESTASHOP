@@ -108,3 +108,7 @@ d82a9d,192.168.65.1,GET,http://localhost:8080/admin4577/index.php/sell/customers
 d4a1af,192.168.65.1,GET,http://localhost:8080/admin4577/index.php/sell/customers/2/edit?_token=4CBbvYDxUW323uxOYBTk6yGZXNojX6vXT8XuureQEpw,1740102949,,200
 e18deb,192.168.65.1,POST,http://localhost:8080/admin4577/index.php/common/notifications?_token=4CBbvYDxUW323uxOYBTk6yGZXNojX6vXT8XuureQEpw&rand=1740102950203,1740102950,,200
 5ce49d,192.168.65.1,POST,http://localhost:8080/admin4577/index.php/common/notifications?_token=4CBbvYDxUW323uxOYBTk6yGZXNojX6vXT8XuureQEpw,1740102951,,200
+676caa,192.168.65.1,POST,http://localhost:8080/admin4577/index.php/common/notifications?_token=4CBbvYDxUW323uxOYBTk6yGZXNojX6vXT8XuureQEpw&rand=1740103071486,1740103073,,200
+b7a00b,192.168.65.1,POST,http://localhost:8080/admin4577/index.php/common/notifications?_token=4CBbvYDxUW323uxOYBTk6yGZXNojX6vXT8XuureQEpw,1740103074,,200
+ca44cc,192.168.65.1,POST,http://localhost:8080/admin4577/index.php/common/notifications?_token=4CBbvYDxUW323uxOYBTk6yGZXNojX6vXT8XuureQEpw&rand=1740103194488,1740103195,,200
+d0947a,192.168.65.1,POST,http://localhost:8080/admin4577/index.php/common/notifications?_token=4CBbvYDxUW323uxOYBTk6yGZXNojX6vXT8XuureQEpw,1740103195,,200
