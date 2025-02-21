@@ -10,7 +10,7 @@ if (in_array(PHP_SAPI, ['cli', 'phpdbg'], true)) {
 }
 
 require dirname(__DIR__, 3).'/vendor/autoload.php';
-require __DIR__.'/ContainerNaYnYlh/appAppKernelDevDebugContainer.php';
+require __DIR__.'/ContainerXdLVIfO/appAppKernelDevDebugContainer.php';
 
 $classes = [];
 $classes[] = 'Symfony\Bundle\FrameworkBundle\FrameworkBundle';
@@ -2154,6 +2154,9 @@ $classes[] = 'PrestaShop\Module\BlockWishList\Grid\Data\CurrentMonthStatisticsGr
 $classes[] = 'PrestaShop\Module\BlockWishList\Grid\Definition\CurrentMonthStatisticsGridDefinitionFactory';
 $classes[] = 'PrestaShop\Module\BlockWishList\Grid\Data\CurrentYearStatisticsGridDataFactory';
 $classes[] = 'PrestaShop\Module\BlockWishList\Grid\Definition\CurrentYearStatisticsGridDefinitionFactory';
+$classes[] = 'PrestaShop\Module\CustomUserDiscounts\Controller\AdminCustomUserDiscountsController';
+$classes[] = 'PrestaShop\Module\CustomUserDiscounts\Form\DiscountType';
+$classes[] = 'PrestaShop\Module\CustomUserDiscounts\Repository\CustomUserDiscountRepository';
 $classes[] = 'PrestaShop\Module\LinkList\Adapter\ObjectModelHandler';
 $classes[] = 'PrestaShop\Module\LinkList\Cache\LegacyLinkBlockCache';
 $classes[] = 'PrestaShop\Module\LinkList\Form\ChoiceProvider\CategoryChoiceProvider';

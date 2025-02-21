@@ -2,111 +2,111 @@
 
 namespace PrestaShop\Module\CustomUserDiscounts\Repository;
 
-use Db;
-use DbQuery;
+use Doctrine\DBAL\Connection;
 
 class CustomUserDiscountRepository
 {
-    public function findAll()
+    private $connection;
+    private $dbPrefix;
+    private $table;
+
+    public function __construct(Connection $connection, string $dbPrefix)
     {
-        $query = new DbQuery();
-        $query->select('d.*, c.firstname as customer_firstname, c.lastname as customer_lastname, c.email')
-            ->from('custom_user_discount', 'd')
-            ->leftJoin('customer', 'c', 'c.id_customer = d.id_customer')
-            ->where('d.active = 1')
-            ->orderBy('d.date_add DESC');
+        $this->connection = $connection;
+        $this->dbPrefix = $dbPrefix;
+        $this->table = $this->dbPrefix . 'custom_user_discount';
+    }
 
-        $result = Db::getInstance()->executeS($query);
+    public function findAll(): array
+    {
+        $qb = $this->connection->createQueryBuilder();
+        $qb->select('d.*, CONCAT(c.firstname, " ", c.lastname) as customer_name, c.email as customer_email')
+           ->from($this->table, 'd')
+           ->leftJoin('d', $this->dbPrefix . 'customer', 'c', 'd.id_customer = c.id_customer')
+           ->orderBy('d.id_custom_user_discount', 'DESC');
 
-        if (!$result) {
-            return [];
+        return $qb->execute()->fetchAll();
+    }
+
+    public function find(int $id): ?array
+    {
+        $qb = $this->connection->createQueryBuilder();
+        $qb->select('d.*, CONCAT(c.firstname, " ", c.lastname) as customer_name')
+           ->from($this->table, 'd')
+           ->leftJoin('d', $this->dbPrefix . 'customer', 'c', 'd.id_customer = c.id_customer')
+           ->where('d.id_custom_user_discount = :id')
+           ->setParameter('id', $id);
+
+        $result = $qb->execute()->fetch();
+        return $result ?: null;
+    }
+
+    public function findByCustomerId(int $customerId): array
+    {
+        $qb = $this->connection->createQueryBuilder();
+        $qb->select('d.*')
+           ->from($this->table, 'd')
+           ->where('d.id_customer = :customerId')
+           ->setParameter('customerId', $customerId)
+           ->orderBy('d.id_custom_user_discount', 'DESC');
+
+        return $qb->execute()->fetchAll();
+    }
+
+    public function findActiveDiscountByCustomerId(int $customerId): ?array
+    {
+        $qb = $this->connection->createQueryBuilder();
+        $qb->select('d.*')
+           ->from($this->table, 'd')
+           ->where('d.id_customer = :customerId')
+           ->andWhere('d.active = 1')
+           ->setParameter('customerId', $customerId)
+           ->orderBy('d.id_custom_user_discount', 'DESC')
+           ->setMaxResults(1);
+
+        $result = $qb->execute()->fetch();
+        return $result ?: null;
+    }
+
+    public function save(array $data): bool
+    {
+        try {
+            if (isset($data['id_custom_user_discount'])) {
+                return $this->update($data);
+            }
+            return $this->insert($data);
+        } catch (\Exception $e) {
+            return false;
         }
-
-        // Formatear los resultados
-        return array_map(function ($row) {
-            return [
-                'id' => $row['id_custom_user_discount'],
-                'idCustomer' => $row['id_customer'],
-                'customerName' => $row['customer_firstname'] . ' ' . $row['customer_lastname'],
-                'customerEmail' => $row['email'],
-                'discountType' => $row['discount_type'],
-                'discountValue' => $row['discount_value'],
-                'dateAdd' => $row['date_add'],
-                'active' => $row['active']
-            ];
-        }, $result);
     }
 
-    public function findByCustomerId($customerId)
+    private function insert(array $data): bool
     {
-        $query = new DbQuery();
-        $query->select('*')
-            ->from('custom_user_discount')
-            ->where('id_customer = ' . (int)$customerId)
-            ->where('active = 1')
-            ->orderBy('date_add DESC');
+        $data['date_add'] = date('Y-m-d H:i:s');
+        $data['date_upd'] = date('Y-m-d H:i:s');
 
-        $result = Db::getInstance()->executeS($query);
-
-        return $result ?: [];
+        return (bool) $this->connection->insert($this->table, $data);
     }
 
-    public function findActiveDiscountByCustomerId($customerId)
+    private function update(array $data): bool
     {
-        $query = new DbQuery();
-        $query->select('*')
-            ->from('custom_user_discount')
-            ->where('id_customer = ' . (int)$customerId)
-            ->where('active = 1')
-            ->orderBy('date_add DESC');
+        $id = $data['id_custom_user_discount'];
+        unset($data['id_custom_user_discount']);
+        $data['date_upd'] = date('Y-m-d H:i:s');
 
-        $result = Db::getInstance()->executeS($query);
-        
-        return $result && count($result) > 0 ? $result[0] : null;
-    }
-
-    public function delete($id)
-    {
-        return Db::getInstance()->update(
-            'custom_user_discount',
-            ['active' => 0],
-            'id_custom_user_discount = ' . (int)$id
-        );
-    }
-
-    public function update($id, $data)
-    {
-        return Db::getInstance()->update(
-            'custom_user_discount',
+        return (bool) $this->connection->update(
+            $this->table,
             $data,
-            'id_custom_user_discount = ' . (int)$id
+            ['id_custom_user_discount' => $id]
         );
     }
 
-    public function saveCustomerDiscount($customerId, $discountType, $discountValue)
+    public function delete(int $id): bool
     {
-        // Buscar si existe un descuento activo
-        $existingDiscount = $this->findActiveDiscountByCustomerId($customerId);
-
-        $data = [
-            'discount_type' => pSQL($discountType),
-            'discount_value' => (float)$discountValue,
-            'date_upd' => date('Y-m-d H:i:s')
-        ];
-
-        if ($existingDiscount) {
-            // Actualizar el descuento existente
-            return Db::getInstance()->update(
-                'custom_user_discount',
-                $data,
-                'id_custom_user_discount = ' . (int)$existingDiscount['id_custom_user_discount']
-            );
-        } else {
-            // Crear un nuevo descuento
-            $data['id_customer'] = (int)$customerId;
-            $data['active'] = 1;
-            $data['date_add'] = $data['date_upd'];
-            return Db::getInstance()->insert('custom_user_discount', $data);
+        try {
+            return (bool) $this->connection->delete($this->table, ['id_custom_user_discount' => $id]);
+        } catch (\Exception $e) {
+            return false;
         }
     }
 }

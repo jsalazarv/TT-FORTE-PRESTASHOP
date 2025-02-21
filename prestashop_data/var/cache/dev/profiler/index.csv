@@ -1,0 +1,13 @@
+05b935,192.168.65.1,GET,http://localhost:8080/admin4577/index.php/modules/customuserdiscounts/list?_token=4CBbvYDxUW323uxOYBTk6yGZXNojX6vXT8XuureQEpw,1740098487,,200
+16df87,192.168.65.1,POST,http://localhost:8080/admin4577/index.php/common/notifications?_token=4CBbvYDxUW323uxOYBTk6yGZXNojX6vXT8XuureQEpw&rand=1740098489167,1740098490,,200
+19dc42,192.168.65.1,POST,http://localhost:8080/admin4577/index.php/common/notifications?_token=4CBbvYDxUW323uxOYBTk6yGZXNojX6vXT8XuureQEpw,1740098491,,200
+717b95,192.168.65.1,GET,http://localhost:8080/admin4577/index.php/_fragment?_path=_format%3Dhtml%26_locale%3Den-US%26_controller%3DPrestaShopBundle%253AAdmin%255CCommon%253ArenderKpiRow,1740098505,a1787a,200
+a1787a,192.168.65.1,GET,http://localhost:8080/admin4577/index.php/sell/customers/?_token=4CBbvYDxUW323uxOYBTk6yGZXNojX6vXT8XuureQEpw,1740098506,,200
+9b1ab9,192.168.65.1,POST,http://localhost:8080/admin4577/index.php/common/notifications?_token=4CBbvYDxUW323uxOYBTk6yGZXNojX6vXT8XuureQEpw,1740098508,,200
+59d192,192.168.65.1,POST,http://localhost:8080/admin4577/index.php/common/notifications?_token=4CBbvYDxUW323uxOYBTk6yGZXNojX6vXT8XuureQEpw&rand=1740098507124,1740098508,,200
+426fc7,192.168.65.1,GET,http://localhost:8080/admin4577/index.php/sell/customers/2/edit?_token=4CBbvYDxUW323uxOYBTk6yGZXNojX6vXT8XuureQEpw,1740098509,,200
+7c39fb,192.168.65.1,POST,http://localhost:8080/admin4577/index.php/common/notifications?_token=4CBbvYDxUW323uxOYBTk6yGZXNojX6vXT8XuureQEpw,1740098510,,200
+e1f85f,192.168.65.1,POST,http://localhost:8080/admin4577/index.php/common/notifications?_token=4CBbvYDxUW323uxOYBTk6yGZXNojX6vXT8XuureQEpw&rand=1740098509871,1740098510,,200
+2bf813,192.168.65.1,GET,http://localhost:8080/admin4577/index.php/modules/customuserdiscounts/list?_token=4CBbvYDxUW323uxOYBTk6yGZXNojX6vXT8XuureQEpw,1740098515,,200
+83533b,192.168.65.1,POST,http://localhost:8080/admin4577/index.php/common/notifications?_token=4CBbvYDxUW323uxOYBTk6yGZXNojX6vXT8XuureQEpw,1740098516,,200
+182779,192.168.65.1,POST,http://localhost:8080/admin4577/index.php/common/notifications?_token=4CBbvYDxUW323uxOYBTk6yGZXNojX6vXT8XuureQEpw&rand=1740098515527,1740098516,,200
